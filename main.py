@@ -2,7 +2,12 @@ import streamlit as st
 import sys
 import os
 import pandas as pd
-
+# --- [THÊM ĐOẠN NÀY VÀO DƯỚI CÁC IMPORT KHÁC] ---
+try:
+    from modules.analytics.alternateinvestment.base_analytics import FinancialMath, CashFlow
+    from decimal import Decimal # Cần cái này để xử lý số chính xác
+except ImportError: 
+    pass
 # --- SYSTEM SETUP ---
 # Thêm đường dẫn để Python tìm thấy các module con
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -64,10 +69,15 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # Menu Điều Hướng (Dùng từ điển để dịch tên Menu)
+    # Tìm dòng nav = st.radio(...) và sửa thành:
     nav = st.radio(
         "MODULES", 
-        [T["nav_dashboard"], T["nav_dcf"], T["nav_cfa"]], 
+        [
+            T["nav_dashboard"], 
+            T["nav_dcf"], 
+            T["nav_cfa"], 
+            T["nav_quant"]  # <-- Thêm Module 03 vào đây
+        ], 
         label_visibility="collapsed"
     )
     
@@ -77,7 +87,7 @@ with st.sidebar:
 # --- MAIN CONTENT AREA ---
 
 # ==================================================
-# MODULE 1: CORPORATE FINANCE (DCF VALUATION)
+# MODULE 0: CORPORATE FINANCE (DCF VALUATION)
 # ==================================================
 if nav == T["nav_dcf"]:
     st.title(T["dcf_title"])
@@ -140,7 +150,7 @@ if nav == T["nav_dcf"]:
                     st.error(f"System Error: {e}")
 
 # ==================================================
-# MODULE 2: ASSET LOCATION (CFA ANALYTICS)
+# MODULE 1: ASSET LOCATION (CFA ANALYTICS)
 # ==================================================
 elif nav == T["nav_cfa"]:
     # Tiêu đề lấy từ Config
@@ -215,7 +225,7 @@ elif nav == T["nav_cfa"]:
             st.markdown(f"> **RATIONALE:** {result['reason']}")
 
 # ==================================================
-# MODULE 3: DASHBOARD (PLACEHOLDER)
+# MODULE 2: DASHBOARD (PLACEHOLDER)
 # ==================================================
 elif nav == T["nav_dashboard"]:
     st.title("EXECUTIVE DASHBOARD")
@@ -226,3 +236,108 @@ elif nav == T["nav_dashboard"]:
     m1.metric("S&P 500", "5,420.33", "+1.2%")
     m2.metric("VN-Index", "1,250.45", "-0.5%")
     m3.metric("Bitcoin", "$98,000", "+2.5%")
+# ==================================================
+# MODULE 03: QUANTITATIVE ANALYSIS (MỚI)
+# ==================================================
+elif nav == T["nav_quant"]:
+    st.title(T["quant_title"])
+    st.markdown(f"`{T['quant_subtitle']}`")
+    st.divider()
+
+    # Import thư viện cần thiết ngay tại đây
+    from modules.analytics.alternateinvestment.base_analytics import FinancialMath, CashFlow
+    from decimal import Decimal
+    
+    # Tạo 2 Tab chức năng
+    tab1, tab2 = st.tabs([T["tab_risk"], T["tab_project"]])
+
+    # --- TAB 1: RISK METRICS ---
+    with tab1:
+        col_in, col_out = st.columns([1, 2], gap="large")
+        with col_in:
+            st.subheader("INPUT DATA")
+            raw_returns = st.text_area(
+                T["input_returns"], 
+                value="2.5, -1.2, 3.8, 4.5, -2.0, 5.1, 1.2, -0.5, 3.0",
+                height=150
+            )
+            rf_input = st.number_input("Risk Free Rate (%)", value=2.0, step=0.1)
+            btn_risk = st.button(T["btn_calc_risk"])
+
+        with col_out:
+            if btn_risk:
+                try:
+                    # Xử lý dữ liệu
+                    returns_list = [Decimal(x.strip())/100 for x in raw_returns.split(',') if x.strip()]
+                    
+                    if len(returns_list) > 1:
+                        # Tính toán
+                        sharpe = FinancialMath.sharpe_ratio(returns_list, risk_free_rate=Decimal(str(rf_input/100)))
+                        
+                        # Giả lập giá
+                        prices = [Decimal('100')]
+                        for r in returns_list:
+                            prices.append(prices[-1] * (1 + r))
+                        max_dd, _, _ = FinancialMath.maximum_drawdown(prices)
+                        
+                        # Sortino Ratio (Demo)
+                        sortino = FinancialMath.sortino_ratio(returns_list)
+
+                        # Hiển thị kết quả chuyên nghiệp
+                        st.subheader("PERFORMANCE METRICS")
+                        m1, m2, m3, m4 = st.columns(4)
+                        m1.metric("Sharpe Ratio", f"{sharpe:.2f}")
+                        m2.metric("Sortino Ratio", f"{sortino:.2f}")
+                        m3.metric("Max Drawdown", f"{max_dd*100:.2f}%", delta_color="inverse")
+                        m4.metric("Total Return", f"{(prices[-1]-100):.2f}%")
+                        
+                        st.line_chart([float(p) for p in prices])
+                    else:
+                        st.error("Data Error: Need at least 2 return periods.")
+                except Exception as e:
+                    st.error(f"Computation Error: {e}")
+
+    # --- TAB 2: PROJECT VALUATION ---
+    with tab2:
+        col_c1, col_c2 = st.columns([1, 1], gap="large")
+        with col_c1:
+            st.subheader("CASH FLOW PROJECTION")
+            # Bảng nhập liệu
+            cf_df = pd.DataFrame({
+                'Year': [0, 1, 2, 3, 4],
+                'Cash Flow': [-100000, 25000, 35000, 45000, 55000]
+            })
+            cf_data = st.data_editor(cf_df, num_rows="dynamic", use_container_width=True)
+            disc_rate = st.slider("WACC / Discount Rate (%)", 0, 20, 10)
+            
+        with col_c2:
+            st.subheader("FEASIBILITY STUDY")
+            if st.button(T["btn_check_project"]):
+                # Chuẩn bị dữ liệu
+                cfs = []
+                from datetime import datetime, timedelta
+                base_date = datetime.today()
+                
+                for _, row in cf_data.iterrows():
+                    d = (base_date + timedelta(days=365*row['Year'])).strftime('%Y-%m-%d')
+                    cfs.append(CashFlow(date=d, amount=Decimal(str(row['Cash Flow']))))
+                
+                # Tính toán
+                irr_val = FinancialMath.irr(cfs)
+                npv_val = FinancialMath.npv(cfs, discount_rate=Decimal(str(disc_rate/100)))
+                moic_val = FinancialMath.moic(cfs)
+                
+                # Hiển thị kết quả (Quy đổi tiền tệ nếu cần)
+                # Lưu ý: IRR và MOIC là tỷ lệ %, không cần đổi tiền. NPV cần đổi.
+                npv_converted = npv_val * Decimal(str(FX_RATE))
+                
+                m1, m2 = st.columns(2)
+                m1.metric("Internal Rate of Return (IRR)", f"{float(irr_val)*100:.2f}%" if irr_val else "N/A")
+                m2.metric("Multiple on Invested Capital (MOIC)", f"{float(moic_val):.2f}x" if moic_val else "N/A")
+                
+                st.metric(f"Net Present Value (NPV)", f"{SYMBOL}{FMT.format(npv_converted)}")
+                
+                if npv_val > 0:
+                    st.success("✅ PROJECT APPROVED (NPV > 0)")
+                else:
+                    st.error("❌ PROJECT REJECTED (NPV < 0)")
