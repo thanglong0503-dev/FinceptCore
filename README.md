@@ -1,5 +1,8 @@
 # FinceptCore
 Enterprise-grade Financial Intelligence Platform built with Python &amp; Streamlit. Features: On-chain Whale Tracking, CFA Analytics, and AI Market Agents.
+
+<img width="702" height="581" alt="image" src="https://github.com/user-attachments/assets/6489225c-7d5c-4308-9089-6105bf8cd1c9" />
+
 2.1. Cây Thư mục Dự án (Project Directory Tree)
 Fincept_Python_Terminal/
 ├──.streamlit/                   # Cấu hình giao diện và server Streamlit
