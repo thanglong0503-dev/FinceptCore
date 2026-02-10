@@ -1,139 +1,181 @@
 import streamlit as st
 import sys
 import os
+import pandas as pd
 
-# --- 1. CẤU HÌNH HỆ THỐNG ---
-# Thêm đường dẫn gốc để Python tìm thấy các module con
+# --- SYSTEM CONFIGURATION ---
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Cấu hình trang Streamlit (Phải để đầu tiên)
+# Page Setup: Wide layout, professional title
 st.set_page_config(
-    page_title="Fincept Core",
-    page_icon="🦅",
+    page_title="Fincept Core Terminal",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. IMPORT MODULE ---
-# (Đường dẫn mới: analytics -> alternateinvestment -> asset_location)
+# --- CSS INJECTION (TẠO GIAO DIỆN CHUYÊN NGHIỆP) ---
+# Ép font chữ Monospace cho tiêu đề và Sans-serif cho nội dung
+st.markdown("""
+    <style>
+        /* Chỉnh font toàn bộ ứng dụng */
+        .stApp {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        /* Tiêu đề mang phong cách Terminal */
+        h1, h2, h3 {
+            font-family: 'Roboto Mono', 'Courier New', monospace;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        /* Loại bỏ padding thừa của Streamlit */
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        /* Style cho Sidebar */
+        section[data-testid="stSidebar"] {
+            background-color: #f8f9fa; /* Màu xám nhẹ công nghiệp */
+        }
+        /* Style cho Metric Value */
+        div[data-testid="stMetricValue"] {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.8rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- MODULE IMPORT ---
 try:
     from modules.analytics.alternateinvestment.asset_location import AssetLocationAnalyzer
-except ImportError as e:
-    st.error(f"⚠️ LỖI CẤU TRÚC: Không tìm thấy file code.")
-    st.warning("Gợi ý: Ngài hãy kiểm tra xem đã có file '__init__.py' trong thư mục 'alternateinvestment' chưa?")
+except ImportError:
+    st.error("SYSTEM ERROR: Module 'asset_location' not found. Please verify directory structure.")
     st.stop()
 
-# --- 3. GIAO DIỆN SIDEBAR (MENU) ---
+# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.title("🦅 FINCEPT CORE")
-    st.caption("Enterprise Financial Intelligence")
+    st.markdown("### FINCEPT CORE")
+    st.markdown("`v1.0.2-stable`")
     st.markdown("---")
     
-    # Menu điều hướng
-    menu = st.radio(
-        "🎯 TRUNG TÂM ĐIỀU KHIỂN:",
-        ["📊 CFA Analytics (Thuế)", "🐋 Whale Hunter (Sắp ra mắt)", "⚙️ Cài Đặt"]
+    # Menu dạng danh sách đơn giản
+    nav_selection = st.radio(
+        "MODULE SELECTION",
+        ["Dashboard", "CFA Analytics", "Whale Tracking", "System Logs"],
+        label_visibility="collapsed" # Ẩn nhãn để tối giản
     )
     
     st.markdown("---")
-    st.info("System Status: 🟢 Online")
-    st.caption("v1.0.2 | Built with Python 🐍")
+    st.markdown("**SESSION INFO**")
+    st.text(f"User: Admin")
+    st.text(f"Status: Connected")
+    st.text(f"Env: Production")
 
-# --- 4. KHU VỰC CHÍNH (MAIN CONTENT) ---
+# --- MAIN CONTENT AREA ---
 
-# === TAB 1: CFA ANALYTICS (ASSET LOCATION) ===
-if menu == "📊 CFA Analytics (Thuế)":
-    st.header("🧠 Tối Ưu Hóa Vị Trí Tài Sản (Asset Location)")
-    st.markdown("""
-    > *"Đừng để lợi nhuận của Ngài bị Thuế bào mòn. Hãy đặt tài sản đúng chỗ!"* > (Dựa trên giáo trình **CFA Level 3** - Quản lý gia sản).
-    """)
+# === MODULE: CFA ANALYTICS ===
+if nav_selection == "CFA Analytics":
+    # Header khu vực
+    st.title("ASSET LOCATION OPTIMIZATION")
+    st.markdown("`Module: Wealth Management / Tax Efficiency Strategy`")
     st.markdown("---")
 
-    # Chia cột: Bên trái nhập liệu, Bên phải hiện kết quả
-    col_input, col_result = st.columns([1, 2])
-    
-    with col_input:
-        st.subheader("📝 Nhập Thông Tin")
-        with st.form("cfa_form"):
-            # Chọn loại tài sản
-            asset_type = st.selectbox("1. Loại Tài Sản Đầu Tư:", 
-                [
-                    "Stock (Cổ phiếu thường)", 
-                    "Index Fund (Quỹ chỉ số)", 
-                    "Bond (Trái phiếu)", 
-                    "REIT (Bất động sản)", 
-                    "Crypto (Hold dài hạn)", 
-                    "Crypto (Trade lướt sóng)", 
-                    "Municipal Bond (TP Đô thị)"
+    # Layout: 1/3 Input (Trái) - 2/3 Output (Phải)
+    col_left, col_right = st.columns([1, 2], gap="large")
+
+    with col_left:
+        st.subheader("INPUT PARAMETERS")
+        with st.form("analysis_form"):
+            asset_class = st.selectbox(
+                "Asset Class",
+                options=[
+                    "Stock (Public Equity)",
+                    "Index Fund (Passive)",
+                    "Bond (Fixed Income)",
+                    "REIT (Real Estate)",
+                    "Crypto (Long-term Hold)",
+                    "Crypto (High-freq Trading)",
+                    "Municipal Bond"
                 ]
             )
             
-            # Nhập số tiền
-            amount = st.number_input("2. Số Tiền Dự Kiến ($):", value=10000, step=1000)
+            investment_amount = st.number_input("Principal Amount ($)", value=10000, step=1000, format="%d")
             
-            # Chọn thời gian & Thuế
-            years = st.slider("3. Thời gian nắm giữ (Năm):", 5, 40, 20)
-            tax_rate = st.slider("4. Thuế suất thu nhập (%):", 0, 50, 24)
+            time_horizon = st.slider("Time Horizon (Years)", 5, 50, 20)
             
-            # Nút bấm hành động
-            submit_btn = st.form_submit_button("🚀 PHÂN TÍCH NGAY")
+            marginal_tax_rate = st.number_input("Marginal Tax Rate (%)", value=24, min_value=0, max_value=60)
             
-    with col_result:
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_btn = st.form_submit_button("RUN ANALYSIS")
+
+    with col_right:
+        st.subheader("ANALYSIS RESULTS")
+        
         if submit_btn:
-            # --- GỌI BỘ NÃO LÀM VIỆC ---
-            analyzer = AssetLocationAnalyzer(tax_bracket=tax_rate/100)
-            result = analyzer.analyze(asset_type, amount, years)
+            # Xử lý logic
+            analyzer = AssetLocationAnalyzer(tax_bracket=marginal_tax_rate/100)
+            result = analyzer.analyze(asset_class, investment_amount, time_horizon)
             
-            # --- HIỂN THỊ KẾT QUẢ ---
-            st.subheader("💡 Kết Quả Phân Tích")
+            # 1. Key Metrics Row
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric("Tax Efficiency Profile", result['profile'])
+            with m2:
+                saved_val = result.get('saved_value', 0)
+                st.metric("Projected Tax Alpha", f"${saved_val:,.2f}", help="Estimated value saved by optimal placement")
+            with m3:
+                # Tính ROI đơn giản từ việc tiết kiệm thuế
+                roi = (saved_val / investment_amount) * 100 if investment_amount > 0 else 0
+                st.metric("Tax ROI", f"{roi:.2f}%")
             
-            # 1. Hiển thị thẻ màu khuyến nghị
-            rec = result['recommendation']
-            if "TAXABLE" in rec or "Thường" in rec:
-                st.success(f"✅ **KHUYẾN NGHỊ:** {rec}")
-            elif "DEFERRED" in rec or "Hoãn" in rec:
-                st.warning(f"⚠️ **KHUYẾN NGHỊ:** {rec}")
+            st.divider()
+            
+            # 2. Strategic Recommendation
+            st.markdown("#### STRATEGIC RECOMMENDATION")
+            
+            # Logic hiển thị thông báo nghiệp vụ (Business Logic Display)
+            rec_text = result['recommendation']
+            reason_text = result['reason']
+            
+            # Sử dụng các box thông báo chuẩn UI
+            if "TAXABLE" in rec_text or "Thường" in rec_text:
+                st.success(f"**PLACEMENT:** {rec_text}")
+            elif "DEFERRED" in rec_text or "Hoãn" in rec_text:
+                st.warning(f"**PLACEMENT:** {rec_text}")
             else:
-                st.info(f"ℹ️ **KHUYẾN NGHỊ:** {rec}")
-            
-            # 2. Lý do chi tiết
-            st.markdown(f"**🧐 Lý do:** {result['reason']}")
-            
-            # 3. Metric tiền tiết kiệm được
-            st.markdown("---")
-            col_metric1, col_metric2 = st.columns(2)
-            with col_metric1:
-                st.metric(
-                    label="Đánh giá hiệu quả thuế",
-                    value=result['profile']
-                )
-            with col_metric2:
-                saved = result.get('saved_value', 0)
-                st.metric(
-                    label=f"Tiền 'né' được thuế sau {years} năm",
-                    value=f"+ ${saved:,.2f}",
-                    delta="Lợi nhuận ròng"
-                )
+                st.info(f"**PLACEMENT:** {rec_text}")
                 
+            st.markdown(f"> **RATIONALE:** {reason_text}")
+            
+            # 3. Data Table (Bảng dữ liệu)
+            st.markdown("#### DATA BREAKDOWN")
+            df_data = pd.DataFrame({
+                "Metric": ["Initial Principal", "Horizon", "Tax Bracket", "Est. Tax Drag"],
+                "Value": [f"${investment_amount:,.0f}", f"{time_horizon} Years", f"{marginal_tax_rate}%", "Variable"]
+            })
+            st.dataframe(df_data, use_container_width=True, hide_index=True)
+
         else:
-            # Màn hình chờ
-            st.info("👈 Vui lòng nhập thông tin bên trái để AI tính toán chiến lược thuế tối ưu.")
-            with st.expander("📖 Xem bảng tra cứu nhanh"):
-                st.table({
-                    "Tài Sản": ["REITs / Crypto Trade", "Trái phiếu (Bonds)", "Cổ phiếu (Stocks)"],
-                    "Độ 'Ngốn' Thuế": ["🔴 Rất Cao", "🟠 Trung Bình", "🟢 Thấp"],
-                    "Nơi Nên Để": ["Ví Hưu Trí / Hoãn Thuế", "Ví Hưu Trí", "Ví Thường"]
-                })
+            # Màn hình chờ (Idle State)
+            st.info("System Ready. Awaiting Input Parameters...")
+            st.markdown("##### Reference Table: Tax Efficiency Scored")
+            
+            # Bảng tham chiếu tĩnh
+            ref_data = pd.DataFrame({
+                "Asset Class": ["REITs / Active Crypto", "Corporate Bonds", "Stocks / ETFs", "Muni Bonds"],
+                "Tax Drag": ["High (Inefficient)", "Medium", "Low (Efficient)", "None"],
+                "Optimal Account": ["Tax-Deferred (IRA/401k)", "Tax-Deferred", "Taxable Brokerage", "Taxable Brokerage"]
+            })
+            st.dataframe(ref_data, use_container_width=True, hide_index=True)
 
-# === TAB 2: WHALE HUNTER ===
-elif menu == "🐋 Whale Hunter (Sắp ra mắt)":
-    st.empty()
-    st.header("🚧 Khu Vực Đang Xây Dựng")
-    st.warning("Module Săn Cá Mập đang được bảo trì để nâng cấp giao diện mới.")
-    st.image("https://media.giphy.com/media/l0HlHJGHe3yAMhdQY/giphy.gif", width=400) # Ảnh vui nhộn
+# === MODULE: WHALE TRACKING ===
+elif nav_selection == "Whale Tracking":
+    st.title("WHALE WALLET TRACKING")
+    st.markdown("`Module: On-chain Analytics / High Net Worth Individuals`")
+    st.markdown("---")
+    st.warning("Status: MAINTENANCE_MODE. Module is currently offline for upgrades.")
 
-# === TAB 3: SETTINGS ===
-elif menu == "⚙️ Cài Đặt":
-    st.header("⚙️ Cấu Hình Hệ Thống")
-    st.write("Phiên bản Core: v1.0.2")
-    st.write("Kết nối API: 🔴 Disconnected")
+# === MODULE: DASHBOARD ===
+elif nav_selection == "Dashboard":
+    st.title("EXECUTIVE DASHBOARD")
+    st.markdown("---")
+    st.info("Select a specific module from the sidebar to begin analysis.")
