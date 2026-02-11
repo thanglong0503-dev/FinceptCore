@@ -11,6 +11,17 @@ class MarketEngine:
             # Sử dụng fast_info để tối ưu tốc độ
             price = t.fast_info.last_price
             prev_close = t.fast_info.previous_close
+            
+            # Xử lý trường hợp không có dữ liệu
+            if price is None or prev_close is None:
+                 # Fallback history
+                 hist = t.history(period="2d")
+                 if not hist.empty:
+                     price = hist['Close'].iloc[-1]
+                     prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else price
+                 else:
+                     return {"symbol": ticker, "price": 0.0, "change": 0.0, "volume": 0}
+
             change = ((price - prev_close) / prev_close) * 100
             return {
                 "symbol": ticker,
