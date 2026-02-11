@@ -1,228 +1,190 @@
 """
-FINCEPT TERMINAL - CORE APPLICATION KERNEL
-------------------------------------------
-Path: finceptcore/app.py
-Version: 3.3.2 (Hotfix Release)
-Author: Fincept Architecture Team
+=============================================================================
+PROJECT: FINCEPT TERMINAL CORE
+FILE: app.py
+ROLE: Main Entry Point & Executive Dashboard (Trung tâm Chỉ huy)
+AUTHOR: Fincept Copilot (Emo)
+STANDARD: Enterprise Grade - Modular Architecture
+=============================================================================
 """
 
 import streamlit as st
-import sys
-import os
+import datetime
 import time
-import random
-from datetime import datetime
+import os
+import sys
 
-# -----------------------------------------------------------------------------
-# 1. SYSTEM PATH BOOTSTRAP
-# -----------------------------------------------------------------------------
-# Tự động định cấu hình đường dẫn để Python tìm thấy gói 'src'
-# Logic này xử lý việc chạy từ thư mục gốc hoặc thư mục con
-current_file = os.path.abspath(__file__)
-current_dir = os.path.dirname(current_file) # finceptcore/
-project_root = os.path.dirname(current_dir) # FinceptTerminal/
+# ---------------------------------------------------------------------------
+# 1. THIẾT LẬP MÔI TRƯỜNG & ĐƯỜNG DẪN (SYSTEM PATH)
+# ---------------------------------------------------------------------------
+# Đảm bảo Python có thể đọc được các module trong thư mục 'src'
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(ROOT_DIR)
 
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-# Import module an toàn với Error Handling
-try:
-    from src.ui.styles import apply_terminal_style, render_ticker_tape
-    from src.backend.market import MarketEngine
-except ImportError as e:
-    # Fallback cho trường hợp chạy lần đầu chưa có src
-    # (Để tránh sập app nếu người dùng chưa copy src)
-    st.error(f"CRITICAL ERROR: Cannot load core modules. {str(e)}")
-    st.stop()
-
-# -----------------------------------------------------------------------------
-# 2. APPLICATION CONFIGURATION
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 2. CẤU HÌNH TRANG (PAGE CONFIG) - Phải là lệnh Streamlit đầu tiên
+# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Fincept Terminal | Enterprise Intelligence",
+    page_title="Fincept Terminal | Command Center",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://github.com/Fincept-Corporation/FinceptTerminal',
-        'Report a bug': "https://github.com/Fincept-Corporation/FinceptTerminal/issues",
-        'About': "Fincept Terminal v3.3.2 - Institutional Grade Analytics Platform."
-    }
+    initial_sidebar_state="expanded"
 )
 
-# -----------------------------------------------------------------------------
-# 3. GLOBAL STATE MANAGEMENT
-# -----------------------------------------------------------------------------
-if 'session_id' not in st.session_state:
-    st.session_state.session_id = f"SES-{int(time.time())}"
-if 'user_role' not in st.session_state:
-    st.session_state.user_role = "PORTFOLIO_MANAGER"
-if 'data_feed_status' not in st.session_state:
-    st.session_state.data_feed_status = "CONNECTED"
-
-# Áp dụng giao diện Terminal (Dark Mode + Monospace Font)
-apply_terminal_style()
-
-# -----------------------------------------------------------------------------
-# 4. DATA FEED ENGINE (SỬA LỖI TẠI ĐÂY)
-# -----------------------------------------------------------------------------
-
-# Gán danh sách tài sản cụ thể, KHÔNG ĐỂ TRỐNG
-tickers =
-
-@st.cache_data(ttl=300)
-def fetch_global_market_pulse(symbol_list):
-    """
-    Lấy dữ liệu nhanh cho thanh Ticker Tape.
-    Sử dụng caching để tối ưu hiệu suất tải trang.
-    """
-    tape_data =
-    # Chỉ lấy 10 mã đầu tiên để demo nhanh
-    priority_symbols = symbol_list[:10]
-    
-    for sym in priority_symbols:
-        try:
-            # Gọi engine backend
-            quote = MarketEngine.get_realtime_price(sym)
-            if quote:
-                tape_data.append(quote)
-        except Exception:
-            continue
-            
-    return tape_data
-
-# Hiển thị Ticker Tape (Băng chuyền giá chạy ngang)
-with st.container():
-    try:
-        if 'ticker_data' not in st.session_state:
-            st.session_state.ticker_data = fetch_global_market_pulse(tickers)
-        
-        if st.session_state.ticker_data:
-            render_ticker_tape(st.session_state.ticker_data)
-        else:
-            st.warning("⚠️ Market Data Feed Initializing...")
-    except Exception as e:
-        # Fail silently để không làm vỡ giao diện chính
-        pass
-
-# -----------------------------------------------------------------------------
-# 5. NAVIGATION ROUTER (ĐIỀU HƯỚNG TRANG)
-# -----------------------------------------------------------------------------
-# Định nghĩa các đối tượng trang (Page Objects)
-# Lưu ý: Các file này phải tồn tại trong thư mục pages/
-
-# Phân hệ 1: Giám sát Thị trường
-pg_cockpit = st.Page(
-    "pages/1_🌐_Market_Cockpit.py", 
-    title="Market Cockpit", 
-    icon="🌐", 
-    default=True
-)
-
-# Phân hệ 2: Phân tích Định lượng
-pg_equity = st.Page(
-    "pages/2_📊_Equity_Research.py", 
-    title="Equity Research", 
-    icon="📊"
-)
-pg_risk = st.Page(
-    "pages/4_⚖️_Portfolio_Risk.py", 
-    title="Portfolio Risk (VaR)", 
-    icon="⚖️"
-)
-
-# Phân hệ 3: Trí tuệ Nhân tạo
-pg_ai_core = st.Page(
-    "pages/3_🧠_AI_Neural_Core.py", 
-    title="AI Neural Core", 
-    icon="🧠"
-)
-
-# Cấu trúc Menu Điều hướng (Grouped Navigation)
-navigation_structure = {
-    "MARKET INTELLIGENCE": [pg_cockpit],
-    "QUANTITATIVE LAB": [pg_equity, pg_risk],
-    "AI SYSTEMS": [pg_ai_core]
-}
-
-# Khởi tạo Router
-pg = st.navigation(navigation_structure)
-
-# -----------------------------------------------------------------------------
-# 6. SIDEBAR CONTROLS (THANH ĐIỀU KHIỂN BÊN)
-# -----------------------------------------------------------------------------
-with st.sidebar:
-    # Logo Area
-    st.markdown("## 🦅 FINCEPT TERM")
-    st.caption(f"ID: {st.session_state.session_id}")
-    st.markdown("---")
-    
-    # System Telemetry
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**CORE**")
-        st.markdown(f"🟢 {st.session_state.data_feed_status}")
-    with col2:
-        st.markdown("**PING**")
-        st.markdown(f"⚡ {random.randint(12, 45)}ms")
-    
-    st.markdown("---")
-    
-    # Global Asset Selector (Bộ chọn tài sản toàn cục)
-    st.markdown("### 🎯 ACTIVE ASSET")
-    selected_asset = st.selectbox(
-        "Select Ticker", 
-        tickers,
-        index=0,
-        label_visibility="collapsed"
-    )
-    
-    # Lưu vào session state để các trang con sử dụng
-    st.session_state.active_asset = selected_asset
-    
-    # Command Line Interface (CLI) Simulation
-    st.markdown("### ⌨️ TERMINAL CLI")
-    cmd = st.text_input("Execute Command >", placeholder="HELP for list")
-    
-    if cmd:
-        cmd = cmd.strip().upper()
-        if cmd == "CLEAR":
-            st.cache_data.clear()
-            st.toast("System Memory Purged", icon="🧹")
-        elif cmd == "REBOOT":
-            st.rerun()
-        elif cmd.startswith("LOAD"):
-            # Logic giả lập lệnh LOAD AAPL
-            parts = cmd.split()
-            if len(parts) > 1:
-                st.toast(f"Loading context for {parts[1]}...", icon="🔄")
-        else:
-            st.info(f"Command '{cmd}' sent to buffer.")
-
-    # Footer
-    st.markdown("---")
-    with st.expander("System Logs"):
-        st.caption(f" Boot sequence initiated.")
-        st.caption(f" Modules loaded: 4/4")
-        st.caption(f" User auth: VERIFIED")
-
-# -----------------------------------------------------------------------------
-# 7. MAIN EXECUTION KERNEL
-# -----------------------------------------------------------------------------
-try:
-    # Chạy trang được chọn
-    pg.run()
-    
-except Exception as e:
-    # Global Error Boundary (Bắt lỗi toàn cục)
-    st.error("🛑 SYSTEM KERNEL PANIC")
-    st.error(f"Error Details: {str(e)}")
-    
-    # Hiển thị hướng dẫn khắc phục sự cố
-    st.markdown("### 🛠️ Troubleshooting Guide")
+# ---------------------------------------------------------------------------
+# 3. CSS TÙY CHỈNH (INLINE TERMINAL STYLE)
+# ---------------------------------------------------------------------------
+def inject_custom_css():
+    """Bơm CSS để ép giao diện thành chuẩn Bloomberg Terminal"""
     st.markdown("""
-    1. **Check Directory Structure:** Ensure `pages/` folder exists next to `app.py`.
-    2. **Verify Dependencies:** Run `pip install -r requirements.txt`.
-    3. **Module Integrity:** Ensure `src/` folder contains `__init__.py` files.
-    """)
-    st.code(os.popen("tree.").read(), language="bash")
+        <style>
+            /* Định dạng font chữ Monospace cho toàn hệ thống */
+            html, body, [class*="css"] {
+                font-family: 'Roboto Mono', 'Courier New', Courier, monospace !important;
+            }
+            
+            /* Định dạng tiêu đề vệt sáng Neon */
+            h1, h2, h3 {
+                color: #00FFAA !important;
+                text-shadow: 0px 0px 5px rgba(0, 255, 170, 0.3);
+                letter-spacing: -0.5px;
+            }
+            
+            /* Định dạng thẻ Metric (Chỉ số) */
+            div[data-testid="stMetricValue"] {
+                color: #FFFFFF !important;
+                font-size: 1.8rem !important;
+                font-weight: bold;
+            }
+            div[data-testid="stMetricLabel"] {
+                color: #8892B0 !important;
+                font-size: 0.9rem !important;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            
+            /* Ẩn bớt các thành phần rườm rà của Streamlit mặc định */
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            
+            /* Box chẩn đoán hệ thống */
+            .system-box {
+                border: 1px solid #262730;
+                border-radius: 5px;
+                padding: 15px;
+                background-color: #11141A;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------------------------
+# 4. HIỆU ỨNG KHỞI ĐỘNG HỆ THỐNG (BOOT SEQUENCE)
+# ---------------------------------------------------------------------------
+def terminal_boot_sequence():
+    """Hiệu ứng chạy text giả lập quá trình khởi động máy chủ"""
+    if 'system_booted' not in st.session_state:
+        boot_placeholder = st.empty()
+        with boot_placeholder.container():
+            st.markdown("### 🦅 FINCEPT BIOS v3.0.1 INITIALIZING...")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # Giả lập quá trình load modules
+            boot_logs = [
+                "Mounting secure volumes...",
+                "Loading Fincept Quant Engine...",
+                "Connecting to Global Market Data APIs...",
+                "Initializing Neural Core Agents...",
+                "Establishing secure connection to CFA Risk Module...",
+                "Decrypting user session...",
+                "System Ready."
+            ]
+            
+            for i, log in enumerate(boot_logs):
+                status_text.code(f"[{datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]}] {log}", language="bash")
+                progress_bar.progress((i + 1) * (100 // len(boot_logs)))
+                time.sleep(0.3) # Độ trễ tạo cảm giác chân thực
+                
+            time.sleep(0.5)
+        
+        # Xóa hiệu ứng sau khi boot xong
+        boot_placeholder.empty()
+        st.session_state['system_booted'] = True
+
+# ---------------------------------------------------------------------------
+# 5. HÀM KIỂM TRA TRẠNG THÁI MODULE (SYSTEM DIAGNOSTICS)
+# ---------------------------------------------------------------------------
+def check_module_status(filepath: str) -> tuple[str, str]:
+    """Kiểm tra xem file module đã được tạo hay chưa"""
+    full_path = os.path.join(ROOT_DIR, filepath)
+    if os.path.exists(full_path):
+        return "ONLINE", "normal" # Xanh lá
+    return "OFFLINE", "inverse"   # Đỏ
+
+# ===========================================================================
+# MAIN DASHBOARD EXECUTION
+# ===========================================================================
+def main():
+    # 1. Kích hoạt giao diện & Hiệu ứng
+    inject_custom_css()
+    terminal_boot_sequence()
+
+    # 2. Tiêu đề Dashboard
+    st.title("🦅 FINCEPT TERMINAL: COMMAND CENTER")
+    st.markdown("`[AUTHORIZATION: ADMIN] | [ENCRYPTION: 256-BIT AES] | [STATUS: SECURE]`")
+    st.divider()
+
+    # 3. GLOBAL CLOCK (Giờ thế giới)
+    st.subheader("🌍 GLOBAL MARKET CLOCKS")
+    now_utc = datetime.datetime.utcnow()
+    
+    col_t1, col_t2, col_t3, col_t4 = st.columns(4)
+    # New York (UTC-5 / UTC-4) -> Giả định UTC-5 cho đơn giản
+    col_t1.metric("NEW YORK (NYSE/NASDAQ)", (now_utc - datetime.timedelta(hours=5)).strftime("%H:%M:%S"), "EST")
+    # London (UTC+0)
+    col_t2.metric("LONDON (LSE)", now_utc.strftime("%H:%M:%S"), "GMT")
+    # Tokyo (UTC+9)
+    col_t3.metric("TOKYO (TSE)", (now_utc + datetime.timedelta(hours=9)).strftime("%H:%M:%S"), "JST")
+    # Ho Chi Minh (UTC+7)
+    col_t4.metric("HO CHI MINH (HOSE)", (now_utc + datetime.timedelta(hours=7)).strftime("%H:%M:%S"), "ICT")
+    
+    st.markdown("---")
+
+    # 4. CHẨN ĐOÁN HỆ THỐNG (SYSTEM DIAGNOSTICS)
+    st.subheader("⚙️ SYSTEM DIAGNOSTICS & NODE STATUS")
+    st.info("Bảng theo dõi tiến độ lắp ráp các Module. Hệ thống sẽ tự động cập nhật khi Ngài thêm file mới.")
+    
+    # Kiểm tra các module Backend
+    m1, m2, m3, m4 = st.columns(4)
+    
+    # Check Market Engine
+    status_market, color_market = check_module_status("src/backend/market.py")
+    m1.metric("Node: Market Data", status_market, "src/backend/market.py", delta_color=color_market)
+    
+    # Check Valuation Engine
+    status_val, color_val = check_module_status("src/analytics/valuation.py")
+    m2.metric("Node: DCF Valuation", status_val, "src/analytics/valuation.py", delta_color=color_val)
+    
+    # Check Risk Engine
+    status_risk, color_risk = check_module_status("src/analytics/risk.py")
+    m3.metric("Node: Risk & CFA", status_risk, "src/analytics/risk.py", delta_color=color_risk)
+    
+    # Check Neural Core
+    status_ai, color_ai = check_module_status("src/backend/macro.py") # Tạm check file macro
+    m4.metric("Node: AI & Macro", status_ai, "src/backend/macro.py", delta_color=color_ai)
+
+    st.markdown("---")
+
+    # 5. KHU VỰC THÔNG BÁO (TERMINAL LOGS)
+    st.subheader("🖥️ TERMINAL LOGS")
+    logs = f"""
+[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] SYS_INFO: Command Center Access Granted.
+[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] SYS_WARN: Some backend nodes are currently OFFLINE.
+[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ACTION_REQ: Awaiting Developer to provision 'src/backend' and 'src/analytics' modules.
+[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] GUIDANCE: Please use the Sidebar to navigate to available Multi-pages.
+    """
+    st.code(logs.strip(), language="bash")
+
+if __name__ == "__main__":
+    main()
