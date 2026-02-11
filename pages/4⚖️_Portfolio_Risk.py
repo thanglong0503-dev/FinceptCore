@@ -1,37 +1,50 @@
-# ==========================================
-# FILE: pages/4_⚖️_Portfolio_Risk.py
-# ==========================================
 import streamlit as st
-from src.analytics.risk import CFA_Math, CashFlow
-from src.ui.styles import apply_terminal_style
+import numpy as np
 import pandas as pd
+import plotly.express as px
+from src.ui.styles import apply_terminal_style
 
-st.set_page_config(page_title="Portfolio Risk", layout="wide")
 apply_terminal_style()
+st.title("⚖️ RISK MANAGEMENT & VaR")
 
-st.title("⚖️ PORTFOLIO RISK & QUANT LAB")
-st.markdown("`CFA STANDARD RISK METRICS & CAPITAL BUDGETING`")
-st.divider()
+st.sidebar.header("Portfolio Construction")
+tickers = st.sidebar.text_input("Assets (comma separated)", "AAPL, MSFT, GOOG, GLD, BTC-USD")
+weights_str = st.sidebar.text_input("Weights (comma separated)", "0.2, 0.2, 0.2, 0.2, 0.2")
 
-t1, t2 = st.tabs(["Risk Metrics", "Project IRR"])
-
-with t1:
-    ret_str = st.text_area("Input Monthly Returns (%)", "2.5, -1.2, 3.8, 4.5, -2.0, 5.1")
-    if st.button("COMPUTE RISK"):
-        rets = [float(x.strip())/100 for x in ret_str.split(',')]
-        prices = [100]
-        for r in rets: prices.append(prices[-1] * (1+r))
+if st.button("CALCULATE RISK METRICS"):
+    # Mock Data Generation
+    asset_list = [x.strip() for x in tickers.split(",")]
+    
+    try:
+        weight_list = [float(x) for x in weights_str.split(",")]
+        # Chuẩn hóa trọng số về 1
+        if sum(weight_list)!= 1.0:
+             weight_list = [x/sum(weight_list) for x in weight_list]
+    except:
+        st.error("Invalid weights format")
+        st.stop()
+    
+    # Create fake returns for demo (Thay bằng dữ liệu thật từ MarketEngine nếu cần)
+    dates = pd.date_range(start="2023-01-01", periods=252)
+    data = pd.DataFrame(index=dates)
+    for asset in asset_list:
+        data[asset] = np.random.normal(0, 0.015, 252) # Fake daily returns
         
-        c1, c2 = st.columns(2)
-        c1.metric("Sharpe Ratio", f"{CFA_Math.sharpe_ratio(rets):.2f}")
-        c2.metric("Max Drawdown", f"{CFA_Math.max_drawdown(prices)*100:.2f}%", delta_color="inverse")
-        st.line_chart(prices)
-
-with t2:
-    cf_data = st.data_editor(pd.DataFrame({'Year': [0, 1, 2, 3], 'CF': [-1000, 400, 400, 400]}))
-    rate = st.slider("Discount Rate (%)", 1, 20, 10)/100
-    if st.button("COMPUTE IRR/NPV"):
-        cfs = [CashFlow(f"2026-01-0{int(r['Year'])+1}", r['CF']) for _, r in cf_data.iterrows()]
-        st.metric("NPV", f"${CFA_Math.npv(cfs, rate):,.2f}")
-        irr_val = CFA_Math.irr(cfs)
-        st.metric("IRR", f"{irr_val*100:.2f}%" if irr_val else "Error")
+    # Portfolio Returns
+    data['Portfolio'] = data.dot(weight_list)
+    
+    # Calculate VaR
+    conf_level = 0.95
+    var_95 = np.percentile(data['Portfolio'], (1 - conf_level) * 100)
+    cvar_95 = data['Portfolio'][data['Portfolio'] <= var_95].mean()
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Daily VaR (95%)", f"{var_95*100:.2f}%")
+    c2.metric("CVaR / Expected Shortfall", f"{cvar_95*100:.2f}%")
+    c3.metric("Sharpe Ratio (Ann.)", f"{(data['Portfolio'].mean()/data['Portfolio'].std()) * np.sqrt(252):.2f}")
+    
+    st.subheader("Distribution of Returns")
+    fig = px.histogram(data, x="Portfolio", nbins=50, title="Portfolio Returns Distribution", color_discrete_sequence=['#00FF41'])
+    fig.add_vline(x=var_95, line_dash="dash", line_color="red", annotation_text="VaR 95%")
+    fig.update_layout(template="plotly_dark")
+    st.plotly_chart(fig, use_container_width=True)
