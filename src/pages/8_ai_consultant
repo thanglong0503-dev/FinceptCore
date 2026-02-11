@@ -1,0 +1,86 @@
+import streamlit as st
+import random
+from utils.data_fetcher import MarketDataEngine
+
+st.title("🤖 Hội Đồng Đầu Tư AI (AI Investment Committee)")
+st.markdown("Mô phỏng quy trình ra quyết định với các nhân cách nhà đầu tư huyền thoại.")
+
+# 1. Cấu hình Nhân cách (Persona Configuration) - [23]
+personas = {
+    "Warren Buffett": {
+        "style": "Đầu tư Giá trị (Value Investing)",
+        "focus": "Lợi thế cạnh tranh (Moat), Dòng tiền, Nắm giữ dài hạn, Đạo đức ban lãnh đạo.",
+        "avatar": "🍔",
+        "system_prompt": "Bạn là Warren Buffett. Hãy tập trung vào giá trị nội tại, biên an toàn và lợi thế cạnh tranh bền vững. Hãy hoài nghi về các công nghệ mới nổi mà không có dòng tiền rõ ràng."
+    },
+    "Ray Dalio": {
+        "style": "Vĩ mô Toàn cầu (Global Macro)",
+        "focus": "Chu kỳ kinh tế, Giảm đòn bẩy (De-leveraging), Đa dạng hóa, Risk Parity.",
+        "avatar": "🌐",
+        "system_prompt": "Bạn là Ray Dalio. Hãy phân tích dựa trên cỗ máy kinh tế hoạt động như thế nào. Xem xét lạm phát, lãi suất và vị trí của chúng ta trong chu kỳ nợ lớn."
+    },
+    "Jim Simons": {
+        "style": "Đầu tư Định lượng (Quantitative)",
+        "focus": "Nhận dạng mẫu hình, Bất thường thống kê, Tần suất cao, Tương quan.",
+        "avatar": "📐",
+        "system_prompt": "Bạn là Jim Simons. Bỏ qua các câu chuyện kể (narratives). Chỉ tập trung vào dữ liệu, xu hướng thống kê, độ lệch chuẩn và tín hiệu toán học."
+    }
+}
+
+col_p1, col_p2 = st.columns([2, 3])
+with col_p1:
+    selected_persona = st.radio("Chọn Cố vấn:", list(personas.keys()))
+    st.image(f"https://placehold.co/150x150/222/FFF/png?text={personas[selected_persona]['avatar']}", caption=selected_persona)
+
+with col_p2:
+    st.info(f"**Phương pháp:** {personas[selected_persona]['style']}\n\n**Trọng tâm:** {personas[selected_persona]['focus']}")
+    
+    # 2. Ngữ cảnh Dữ liệu (Context Injection - Simulated RAG)
+    ticker = st.session_state.current_ticker
+    fund_data = MarketDataEngine.get_fundamental_info(ticker)
+    
+    # Tạo ngữ cảnh (Context) từ dữ liệu thực để gửi cho AI
+    # Trong thực tế, đây sẽ là payload gửi tới OpenAI/Anthropic API
+    if fund_data and 'info' in fund_data:
+        pe_ratio = fund_data['info'].get('trailingPE', 'N/A')
+        beta = fund_data['info'].get('beta', 'N/A')
+        context_str = f"Mã: {ticker}, P/E: {pe_ratio}, Beta: {beta}."
+    else:
+        context_str = f"Mã: {ticker} (Dữ liệu hạn chế)."
+
+    # 3. Giao diện Chat
+    if "messages" not in st.session_state:
+        st.session_state.messages =
+
+    # Hiển thị lịch sử chat
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Xử lý đầu vào người dùng
+    if prompt := st.chat_input(f"Hỏi {selected_persona} về {ticker}..."):
+        # Thêm tin nhắn người dùng vào lịch sử
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # 4. Giả lập Phản hồi AI (Simulated AI Response)
+        # Trong production, thay đoạn này bằng `client.chat.completions.create(...)`
+        with st.chat_message("assistant", avatar=personas[selected_persona]['avatar']):
+            with st.spinner(f"{selected_persona} đang phân tích dữ liệu {ticker}..."):
+                time.sleep(1.5) # Giả lập độ trễ suy nghĩ
+                
+                # Logic phản hồi giả lập dựa trên nhân cách
+                response_prefix = f"**[{selected_persona} Analysis]**: "
+                
+                if selected_persona == "Warren Buffett":
+                    advice = f"Đối với {ticker}, điều đầu tiên tôi nhìn vào là con hào kinh tế. Với P/E hiện tại là {pe_ratio}, tôi cần chắc chắn rằng dòng tiền của họ sẽ tăng trưởng đều đặn trong 10 năm tới mà không cần tái đầu tư vốn quá nhiều. Hãy nhớ quy tắc số 1: Đừng để mất tiền."
+                elif selected_persona == "Ray Dalio":
+                    advice = f"Chúng ta đang ở giai đoạn cuối của chu kỳ nợ dài hạn. {ticker} có độ biến động (Beta: {beta}) cần được cân nhắc trong bối cảnh danh mục đầu tư 'All Weather'. Liệu tài sản này có hoạt động tốt khi lạm phát đình trệ (stagflation) xảy ra không?"
+                else: # Jim Simons
+                    advice = f"Các tín hiệu thống kê cho thấy sự phân kỳ trong ngắn hạn của {ticker}. Mô hình trung dung (mean reversion) của tôi đang phát tín hiệu cảnh báo khi giá lệch chuẩn quá xa so với đường trung bình động 200 ngày."
+                
+                full_response = response_prefix + advice
+                
+                st.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
