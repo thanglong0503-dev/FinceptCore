@@ -1,41 +1,42 @@
-# src/backend/macro_data.py
-import pandas as pd
-from dbnomics import fetch_series
+"""
+=============================================================================
+PROJECT: FINCEPT TERMINAL CORE
+FILE: src/backend/macro.py
+ROLE: Macroeconomic Data Engine (Kéo dữ liệu vĩ mô, lãi suất)
+AUTHOR: Fincept Copilot (Emo)
+=============================================================================
+"""
+
+import yfinance as yf
 import streamlit as st
+import logging
+from typing import Optional
 
-class MacroDataEngine:
-    """
-    Kết nối với DBnomics để lấy dữ liệu kinh tế vĩ mô toàn cầu.
-    """
-    
-    @staticmethod
-    @st.cache_data(ttl=86400 * 7)  # Cache 1 tuần vì dữ liệu vĩ mô ít thay đổi
-    def fetch_gdp_growth(country_code: str = "USA"):
-        """
-        Lấy dữ liệu tăng trưởng GDP từ World Bank.
-        Mã series cần được tra cứu chính xác từ DBnomics.
-        Ví dụ: World Bank WDI (World Development Indicators).
-        """
-        try:
-            # Series ID mẫu cho GDP growth (annual %) của WB
-            # Cấu trúc: WB/WDI/NY.GDP.MKTP.KD.ZG-{country_code}
-            series_id = f"WB/WDI/NY.GDP.MKTP.KD.ZG-{country_code}"
-            df = fetch_series(series_id)
-            return df[['period', 'value']].rename(columns={'period': 'Year', 'value': 'GDP Growth'})
-        except Exception as e:
-            st.warning(f"Không thể lấy dữ liệu GDP cho {country_code}")
-            return pd.DataFrame()
+logger = logging.getLogger(__name__)
+
+class MacroEngine:
+    """Động cơ xử lý dữ liệu Vĩ mô (Lãi suất, Lạm phát, GDP)"""
 
     @staticmethod
-    @st.cache_data
-    def fetch_inflation_rate(country_code: str = "USA"):
+    @st.cache_data(ttl=86400, show_spinner=False) # Lãi suất ít biến động, cache 1 ngày (86400s)
+    def get_risk_free_rate() -> float:
         """
-        Lấy dữ liệu lạm phát (CPI).
+        Lấy lợi suất Trái phiếu Chính phủ Mỹ 10 năm (^TNX) làm Risk-Free Rate.
+        Trả về dưới dạng số thập phân (VD: 4.2% -> 0.042)
         """
+        logger.info("FETCHING MACRO: US 10-Year Treasury Yield (^TNX)")
         try:
-            # Series ID mẫu cho Inflation, consumer prices (annual %)
-            series_id = f"WB/WDI/FP.CPI.TOTL.ZG-{country_code}"
-            df = fetch_series(series_id)
-            return df[['period', 'value']].rename(columns={'period': 'Year', 'value': 'Inflation Rate'})
+            # Lấy mã ^TNX từ Yahoo Finance
+            tnx = yf.Ticker("^TNX")
+            df = tnx.history(period="5d")
+            
+            if df is not None and not df.empty:
+                # Lấy giá đóng cửa phiên gần nhất, chia 100 vì ^TNX hiển thị dạng % (VD: 4.2)
+                yield_pct = float(df['Close'].iloc[-1])
+                return yield_pct / 100.0
+            else:
+                raise ValueError("No data returned for ^TNX")
+                
         except Exception as e:
-            return pd.DataFrame()
+            logger.warning(f"Macro Engine Warning: Không lấy được ^TNX ({e}). Dùng fallback 4.25%")
+            return 0.0425 # Fallback an toàn (4.25%) nếu API lỗi
