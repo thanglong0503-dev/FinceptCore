@@ -1,62 +1,33 @@
-# src/analytics/fundamental.py
 import numpy as np
 
-class FundamentalAnalyzer:
+class ValuationEngine:
     @staticmethod
-    def dcf_valuation(
-        current_fcf: float,
-        growth_rate_5y: float,
-        terminal_growth_rate: float,
-        discount_rate: float,
-        net_debt: float,
-        shares_outstanding: float
-    ):
+    def calculate_dcf(fcf, growth_rate, terminal_growth, discount_rate, years=5, net_debt=0, shares=1):
         """
-        Tính toán giá trị nội tại (Intrinsic Value) của cổ phiếu theo phương pháp DCF 2 giai đoạn.
-        
-        Args:
-            current_fcf: Dòng tiền tự do hiện tại (TTM).
-            growth_rate_5y: Tốc độ tăng trưởng dự kiến trong 5 năm tới (ví dụ: 0.10 cho 10%).
-            terminal_growth_rate: Tốc độ tăng trưởng dài hạn (ví dụ: 0.025).
-            discount_rate: Chi phí vốn bình quân gia quyền (WACC) (ví dụ: 0.09).
-            net_debt: Nợ ròng (Tổng nợ - Tiền mặt).
-            shares_outstanding: Số lượng cổ phiếu đang lưu hành.
-            
-        Returns:
-            dict: Kết quả định giá chi tiết.
+        Tính toán DCF đơn giản hóa.
         """
-        future_cash_flows =
+        future_fcf =
         discount_factors =
         
-        # Giai đoạn 1: Tăng trưởng nhanh (5 năm)
-        fcf = current_fcf
-        for i in range(1, 6):
-            fcf = fcf * (1 + growth_rate_5y)
-            future_cash_flows.append(fcf)
+        # Giai đoạn dự phóng
+        current = fcf
+        for i in range(1, years + 1):
+            current *= (1 + growth_rate)
+            future_fcf.append(current)
             discount_factors.append((1 + discount_rate) ** i)
             
-        # Tính hiện giá của dòng tiền giai đoạn 1
-        pv_stage_1 = sum([fcf / df for fcf, df in zip(future_cash_flows, discount_factors)])
+        pv_stage_1 = sum([f / d for f, d in zip(future_fcf, discount_factors)])
         
-        # Giai đoạn 2: Giá trị kết dư (Terminal Value)
-        last_fcf = future_cash_flows[-1]
-        terminal_value = (last_fcf * (1 + terminal_growth_rate)) / (discount_rate - terminal_growth_rate)
+        # Giá trị kết dư (Terminal Value)
+        terminal_val = (future_fcf[-1] * (1 + terminal_growth)) / (discount_rate - terminal_growth)
+        pv_terminal = terminal_val / ((1 + discount_rate) ** years)
         
-        # Hiện giá của Terminal Value
-        pv_terminal_value = terminal_value / ((1 + discount_rate) ** 5)
-        
-        # Giá trị doanh nghiệp (Enterprise Value)
-        enterprise_value = pv_stage_1 + pv_terminal_value
-        
-        # Giá trị vốn chủ sở hữu (Equity Value)
-        equity_value = enterprise_value - net_debt
-        
-        # Giá trị mỗi cổ phiếu
-        fair_value = equity_value / shares_outstanding
+        enterprise_val = pv_stage_1 + pv_terminal
+        equity_val = enterprise_val - net_debt
+        fair_value = equity_val / shares
         
         return {
             "fair_value": fair_value,
-            "enterprise_value": enterprise_value,
-            "pv_stage_1": pv_stage_1,
-            "pv_terminal": pv_terminal_value
+            "enterprise_value": enterprise_val,
+            "upside": 0.0 # Cần so sánh với giá thị trường bên ngoài
         }
