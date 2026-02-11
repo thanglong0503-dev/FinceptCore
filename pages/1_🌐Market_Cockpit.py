@@ -21,7 +21,7 @@ quote = MarketEngine.get_realtime_price(ticker)
 # Metrics Row
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("LAST PRICE", f"${quote['price']}", f"{quote['change']}%")
-c2.metric("VOLUME", f"{quote['volume']:,}")
+c2.metric("VOLUME", f"{quote['volume']:,}" if quote['volume'] else "N/A")
 c3.metric("HIGH (Period)", f"${data['High'].max():.2f}" if not data.empty else "N/A")
 c4.metric("LOW (Period)", f"${data['Low'].min():.2f}" if not data.empty else "N/A")
 
