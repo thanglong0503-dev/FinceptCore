@@ -19,12 +19,13 @@ class ValuationEngine:
         pv_stage_1 = sum([f / d for f, d in zip(future_fcf, discount_factors)])
         
         # Giá trị kết dư (Terminal Value)
+        # Sử dụng Gordon Growth Model
         terminal_val = (future_fcf[-1] * (1 + terminal_growth)) / (discount_rate - terminal_growth)
         pv_terminal = terminal_val / ((1 + discount_rate) ** years)
         
         enterprise_val = pv_stage_1 + pv_terminal
         equity_val = enterprise_val - net_debt
-        fair_value = equity_val / shares
+        fair_value = equity_val / shares if shares > 0 else 0
         
         return {
             "fair_value": fair_value,
