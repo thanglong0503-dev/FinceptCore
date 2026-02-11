@@ -1,1 +1,13 @@
-
+streamlit>=1.36.0
+yfinance>=0.2.40
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.15.0
+pandas_ta>=0.3.14b0
+dbnomics>=1.0.5
+pydeck>=0.8.0
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.10
+faiss-cpu>=1.7.4
+python-dotenv>=1.0.0
