@@ -43,13 +43,16 @@ with col2:
     st.markdown("### 3. VALUATION MODEL OUTPUT")
     
     if st.button("RUN DCF SIMULATION", type="primary"):
+        # Đảm bảo shares > 0 để tránh chia cho 0
+        shares_calc = shares if shares > 0 else 1
+        
         res = ValuationEngine.calculate_dcf(
             fcf=fcf,
             growth_rate=growth,
             terminal_growth=term_g,
             discount_rate=wacc,
             net_debt=(debt - cash),
-            shares=shares
+            shares=shares_calc
         )
         
         current_price = info.get('currentPrice', 1.0)
