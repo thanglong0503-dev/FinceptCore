@@ -1,14 +1,9 @@
+# ==========================================
+# FILE: .streamlit/config.toml
+# ==========================================
 [theme]
-base = "dark"
-primaryColor = "#00FF41"
-backgroundColor = "#0D1117"
-secondaryBackgroundColor = "#161B22"
-textColor = "#E6EDF3"
+primaryColor = "#00FFAA"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
 font = "monospace"
-
-[server]
-enableCORS = false
-headless = true
-
-[browser]
-gatherUsageStats = false
