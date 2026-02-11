@@ -5,7 +5,7 @@ from src.ui.styles import apply_terminal_style
 apply_terminal_style()
 st.title("🧠 NEURAL CORE: AI ANALYST")
 
-# Mock AI Chat Interface (Thay thế bằng OpenAI API thật nếu có key)
+# Mock AI Chat Interface
 if "messages" not in st.session_state:
     st.session_state.messages =
 
