@@ -1,62 +1,95 @@
+"""
+=============================================================================
+PROJECT: FINCEPT TERMINAL CORE
+FILE: pages/1_🌐_Market_Cockpit.py
+ROLE: Real-time Market Data Dashboard
+AUTHOR: Fincept Copilot (Emo)
+=============================================================================
+"""
+
 import streamlit as st
-import plotly.graph_objects as go
-from src.backend.market import MarketEngine
-from src.analytics.technical import TechnicalEngine
+import sys
+import os
+
+# Nạp hệ thống thư viện Core
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.backend.market import MarketDataEngine
+from src.analytics.technical import TechnicalIndicators
+from src.ui.components import TerminalUI
 from src.ui.styles import apply_terminal_style
 
-# Áp dụng CSS
+# 1. KHỞI TẠO PAGE
+st.set_page_config(page_title="Market Cockpit", page_icon="🌐", layout="wide")
 apply_terminal_style()
 
+# 2. HEADER
 st.title("🌐 MARKET COCKPIT")
-st.caption("Real-time Global Surveillance System")
+st.markdown("`[MODULE 01] | REAL-TIME EQUITIES & CRYPTO SCANNER | ENGINE: YFINANCE`")
+st.divider()
 
-# Sidebar Controls
-ticker = st.sidebar.text_input("COMMAND LINE (Ticker)", value="BTC-USD").upper()
-period = st.sidebar.selectbox("TIMEFRAME", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "ytd", "max"], index=4)
+# 3. ĐIỀU KHIỂN BẢNG TÁP-LÔ (CONTROL PANEL)
+col_ctrl, col_main = st.columns([1, 4], gap="large")
 
-# Data Fetching
-data = MarketEngine.get_historical_data(ticker, period=period)
-quote = MarketEngine.get_realtime_price(ticker)
-
-# Metrics Row
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("LAST PRICE", f"${quote['price']}", f"{quote['change']}%")
-c2.metric("VOLUME", f"{quote['volume']:,}" if quote['volume'] else "N/A")
-c3.metric("HIGH (Period)", f"${data['High'].max():.2f}" if not data.empty else "N/A")
-c4.metric("LOW (Period)", f"${data['Low'].min():.2f}" if not data.empty else "N/A")
-
-st.markdown("---")
-
-# Charting Area
-if not data.empty:
-    df_tech = TechnicalEngine.calculate_core_indicators(data)
+with col_ctrl:
+    st.subheader("TARGET")
+    ticker = st.text_input("TICKER SYMBOL", value="AAPL", help="Cổ phiếu (AAPL, VNM.HM) hoặc Crypto (BTC-USD)").upper()
     
-    fig = go.Figure()
+    st.markdown("---")
+    st.subheader("PARAMETERS")
+    period = st.selectbox("TIME HORIZON", ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"], index=3)
+    interval = st.selectbox("RESOLUTION", ["1d", "1wk", "1mo"])
     
-    # Candlestick
-    fig.add_trace(go.Candlestick(x=df_tech.index,
-                                 open=df_tech['Open'], high=df_tech['High'],
-                                 low=df_tech['Low'], close=df_tech['Close'],
-                                 name='Price'))
-    
-    # SMAs
-    if 'SMA_50' in df_tech.columns:
-        fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech, line=dict(color='orange', width=1), name='SMA 50'))
-    if 'SMA_200' in df_tech.columns:
-        fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech, line=dict(color='blue', width=1), name='SMA 200'))
-    
-    # BBands
-    if 'BBU_20_2.0' in df_tech.columns:
-        fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech, line=dict(color='gray', width=0), showlegend=False))
-        fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech, line=dict(color='gray', width=0), fill='tonexty', showlegend=False))
+    st.markdown("---")
+    st.caption("Auto-sync: Active")
+    st.caption("Cache latency: <50ms")
 
-    fig.update_layout(
-        template="plotly_dark",
-        height=700,
-        xaxis_rangeslider_visible=False,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.error(f"NO DATA RECEIVED FOR {ticker}")
+# 4. KHU VỰC HIỂN THỊ CHÍNH (MAIN DISPLAY)
+with col_main:
+    with st.spinner(f"Establishing connection to global feeds for {ticker}..."):
+        # Kéo dữ liệu từ Backend
+        info = MarketDataEngine.get_company_info(ticker)
+        df_raw = MarketDataEngine.get_historical_data(ticker, period, interval)
+        
+        if info and not "error" in info and df_raw is not None:
+            # === PHẦN A: METRICS (Chỉ số nhanh) ===
+            st.subheader(f"ENTITY: {info.get('name', ticker).upper()} | {info.get('exchange', 'N/A')}")
+            
+            m1, m2, m3, m4 = st.columns(4)
+            curr_price = info.get('current_price', 0)
+            prev_price = info.get('previous_close', 0)
+            chg_abs, chg_pct = MarketDataEngine.calculate_price_change(curr_price, prev_price)
+            
+            with m1:
+                TerminalUI.render_metric_card("LAST PRICE", curr_price, chg_pct, prefix=info.get('currency', '$') + " ")
+            with m2:
+                TerminalUI.render_metric_card("MARKET CAP", info.get('market_cap', 0) / 1e9, 0, prefix="$", format_str="{:,.2f}B")
+            with m3:
+                vol_ratio = (info.get('volume', 0) / info.get('avg_volume_10d', 1) * 100) if info.get('avg_volume_10d', 0) else 0
+                TerminalUI.render_metric_card("VOLUME (vs 10d Avg)", info.get('volume', 0) / 1e6, vol_ratio - 100, prefix="", format_str="{:,.2f}M")
+            with m4:
+                TerminalUI.render_metric_card("P/E RATIO", info.get('pe_ratio', 0), 0, prefix="", format_str="{:.2f}x")
+            
+            st.markdown("---")
+            
+            # === PHẦN B: TÍNH TOÁN & VẼ BIỂU ĐỒ ===
+            # Bơm các chỉ báo kỹ thuật vào Dataframe
+            df_tech = TechnicalIndicators.add_all_indicators(df_raw)
+            
+            # Gọi hàm vẽ biểu đồ từ thư viện UI
+            TerminalUI.render_advanced_chart(
+                df_tech, 
+                title=f"{ticker} - ACTION ZONE & VOLUME PROFILE", 
+                show_volume=True
+            )
+            
+            # === PHẦN C: DỮ LIỆU THÔ (DATA MATRIX) ===
+            with st.expander("👁️ DEEP DIVE: RAW TECHNICAL MATRIX"):
+                st.caption("Bảng dữ liệu OHLCV và các chỉ báo kỹ thuật (RSI, MACD, BB) của 30 phiên gần nhất.")
+                # Lọc dữ liệu, đổi thứ tự ngày mới nhất lên trên cùng
+                display_df = df_tech.tail(30).sort_index(ascending=False)
+                TerminalUI.render_data_table(display_df, height=300)
+                
+        else:
+            # Xử lý ngoại lệ đẹp mắt
+            st.error(f"SYSTEM FAILURE: Unable to locate asset '{ticker}'.")
+            st.info("💡 Hướng dẫn: Đảm bảo mã Ticker đúng định dạng của Yahoo Finance. Ví dụ: AAPL, TSLA, BTC-USD, VNM.HM")
