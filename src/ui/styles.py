@@ -35,7 +35,7 @@ def apply_terminal_style():
         }
 
         /* Ticker Tape Animation */
-       .ticker-wrap {
+      .ticker-wrap {
             width: 100%;
             overflow: hidden;
             background-color: #000;
@@ -44,17 +44,17 @@ def apply_terminal_style():
             border-top: 1px solid #30363D;
             white-space: nowrap;
         }
-       .ticker {
+      .ticker {
             display: inline-block;
             animation: ticker 60s linear infinite;
         }
-       .ticker-item {
+      .ticker-item {
             display: inline-block;
             padding: 0 2rem;
             font-size: 14px;
             color: #00FF41;
         }
-       .ticker-item.down { color: #FF4B4B; }
+      .ticker-item.down { color: #FF4B4B; }
         
         @keyframes ticker {
             0% { transform: translateX(0); }
@@ -62,7 +62,7 @@ def apply_terminal_style():
         }
 
         /* Input Fields */
-       .stTextInput > div > div > input {
+      .stTextInput > div > div > input {
             background-color: #0D1117;
             color: #00FF41;
             border: 1px solid #30363D;
