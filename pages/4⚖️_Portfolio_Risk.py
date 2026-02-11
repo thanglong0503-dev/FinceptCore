@@ -14,9 +14,17 @@ weights_str = st.sidebar.text_input("Weights (comma separated)", "0.2, 0.2, 0.2,
 if st.button("CALCULATE RISK METRICS"):
     # Mock Data Generation
     asset_list = [x.strip() for x in tickers.split(",")]
-    weight_list = [float(x) for x in weights_str.split(",")]
     
-    # Create fake returns for demo
+    try:
+        weight_list = [float(x) for x in weights_str.split(",")]
+        # Chuẩn hóa trọng số về 1
+        if sum(weight_list)!= 1.0:
+             weight_list = [x/sum(weight_list) for x in weight_list]
+    except:
+        st.error("Invalid weights format")
+        st.stop()
+    
+    # Create fake returns for demo (Thay bằng dữ liệu thật từ MarketEngine nếu cần)
     dates = pd.date_range(start="2023-01-01", periods=252)
     data = pd.DataFrame(index=dates)
     for asset in asset_list:
