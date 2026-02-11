@@ -1,28 +1,33 @@
+# ==========================================
+# FILE: pages/3_🧠_AI_Neural_Core.py
+# ==========================================
 import streamlit as st
-import time
 from src.ui.styles import apply_terminal_style
+import time
 
+st.set_page_config(page_title="Neural Core", layout="wide")
 apply_terminal_style()
-st.title("🧠 NEURAL CORE: AI ANALYST")
 
-# Mock AI Chat Interface
-if "messages" not in st.session_state:
-    st.session_state.messages =
+st.title("🧠 AI NEURAL CORE")
+st.markdown("`LLM AGENT & SENTIMENT ANALYSIS ENGINE`")
+st.divider()
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+st.text_input("Terminal Query Interface", placeholder="Ask Fincept AI about market conditions...")
 
-prompt = st.chat_input("Query the Neural Core (e.g., 'Analyze TSLA volatility')...")
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("News Sentiment Stream")
+    if st.button("Scan Market"):
+        with st.spinner("Agent parsing news..."):
+            time.sleep(1)
+            st.success("[BULLISH] Federal Reserve hints at rate cuts.")
+            st.error("[BEARISH] Tech sector faces supply chain constraints.")
+            st.info("[NEUTRAL] Oil prices stabilize after inventory report.")
 
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.write(prompt)
-    
-    with st.chat_message("assistant"):
-        with st.spinner("Processing neural weights..."):
-            time.sleep(1) # Giả lập độ trễ suy nghĩ
-            response = f"****: Analysis for '{prompt}' initiated.\n\nBased on current market vectors, the volatility index indicates a standard deviation shift of 2.4 sigma. Recommendation: Hedge with put options if beta exposure exceeds 1.5. (This is a simulation)"
-            st.write(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
+with col2:
+    st.subheader("Agent Memory Logs")
+    st.code("""
+[2026-02-11 14:15] Initialize Quant_Agent
+[2026-02-11 14:16] Scanning SEC Filings (10-K)
+[2026-02-11 14:16] Sentiment Score: 0.72 (Positive)
+    """, language="bash")
